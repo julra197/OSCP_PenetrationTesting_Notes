@@ -235,7 +235,7 @@ http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
 ### USING PROXY chains
 
 
-proxychains nikto -host 10.1.1.4:30080 2> /dev/null
+proxychains nikto -host 10.1.1.254:30080 2> /dev/null
 
 proxychains gobuster -u http://10.1.1.2:30080/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -s '200,204,301,302,307,403,500' -e -l 2> /dev/null
 
