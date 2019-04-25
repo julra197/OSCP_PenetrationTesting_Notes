@@ -1,0 +1,23 @@
+
+
+
+
+Wenn eine Shell auf dem webserver bereitgestellt wird, überprüfe die rechte für den Zugriff:
+chmod 755 file
+Sonst kann der file ggf. nicht gelesen/geladen werden
+
+
+
+In Red Hat Linux werden einige Commands nicht gefunden. z.B. ifconfig
+--> Diese Commands liegen in /sbin/ welcher nicht Teil von PATH ist.
+Daher muss ifconfig mit /sbin/ifconfig ausgeführt werden.
+
+
+
+Oft fügt der zugrundegelegte Code die .php file extension hinzu. bis php version 5.3 terminiert ein Nullbyte den Pfad %00
+
+-->page=../../../../../../../../../../../path/file.ext%00   Anderweitig würde der file als file.ext.php geladen
+
+
+LFI to RCE
+https://medium.com/bugbountywriteup/bugbounty-journey-from-lfi-to-rce-how-a69afe5a0899
