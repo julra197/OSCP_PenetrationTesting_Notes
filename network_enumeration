@@ -1,0 +1,251 @@
+Finding hosts
+
+#Capture arp req/rep packets
+
+netdiscover -i tap0 -r 10.11.1.0/24
+
+arp-scan -I tap0 10.11.1.1-10.11.1.2
+
+Arp requests of particular host
+tcpdump -nnti tap0 arp and host 10.11.1.2
+
+
+
+
+# Enumerating host names
+nmap -p 53 -sT 10.11.1.0/24 --open
+
+add the dns server to /etc/resolv.conf
+than:
+for ip in $(seq 1 254); do host 10.11.1.$ip; done | grep -v "not found"
+reveals all hostnames of the network range
+
+
+# DNS Zone transfer
+host -l thinc.local 10.11.1.2
+
+
+####======= NMAP SCANNING
+
+# Port scanning for "key services" (DNS, FTP, HTTP/HTTPS, NetBIOS, SMB SSH/rDesktop/VNC)
+nmap -p 21,22,53,80,137,138,139,443,445,3389,5900 -sT 10.11.1.0/24 --open
+
+#Nmap webserver enumeration
+nmap -vv -sSV -p 80,443 10.11.1.0/24 --open
+
+#nmap SMB vulnerability enumeration
+nmap -p139,445 -T4 -oN smb_vulns.txt -Pn --script smb-vuln* -vv -d 10.11.1.1-254
+
+nmap -Pn --top-ports=50 -sS 10.11.1.0/24
+Using Pn to treat the hosts to be up (otherwise you miss hosts which do not respond to a ping sweep)
+
+
+# Deep scanning a target
+nmap -p- -sV --reason --dns-server 10.11.1.1 10.11.1.7
+
+# Using Standard Scripts and a full scan to enumerate a target
+nmap -sV -sC -Pn -vv -p- -A 10.11.1.7
+Using Pn to treat the host to be up (otherwise you miss hosts which do not respond to a ping sweep)
+
+
+
+
+#Dont forget UDP!! not using sV -> i would say it takes too much time
+nmap 10.11.1.7 -p- -sU --reason --dns-server 10.11.1.2
+nmap 10.11.1.1 -top-ports=50 -sV -sU
+
+
+
+
+
+
+
+ORTHER NMAP TIPS
+Only Scanning machines which respond to a given Port: e.g. HTTPS-Webservers:
+# -PS <port>  -- invoking the '-PS 443' flag would treat hosts online if there is a response to attempt a connection on port 443. This is extraordinarily useful, and is one of the most valuable features in the Nmap host detection arsenal.
+(Many intrusion detection systems look for SYN scans)
+# -sX         -- The Xmas Tree scan (-sX) works by flagging FIN, URG, and PUSH flags on a packet header.
+# -sN         -- null scan, which sets no flags on the packet header sent to the target port.
+# -sF         -- FIN scan
+### CAUTION: FIN, Xmas, and NULL scans are known to not work against Microsoft Windows hosts.
+
+# Find appropriate nmap scripts
+e.g. ssh
+ls -lh /usr/share/nmap/scripts/*ssh*
+
+# Port knocking
+for x in 7 20 4; do nmap -Pn --host-sstimeout 201 --max-retries 0 -p $x 10.11.1.2; done
+
+
+# Banner grabbing
+use netcat to connect to an open port to get information about the service and the target
+e.g. nc -nv 10.11.1.7 22
+or curl
+e.g. curl -i 10.11.1.7
+or   curl -i -L 10.11.1.7
+
+#There are other tools out there which are able to perform a port scan (that isn't powered by nmap). One of them being "unicornscan".
+#I personally find this to be much quicker than nmap (in general), but it doesn't have nmap's powerful scripting engine. One of the advantages of it is the options, control and power you have using it, but the down side to this, unicornscan is slightly more "confusing" to use.
+#A student of ours, superkojiman, has made a wrapper (onetwopunch - https://github.com/superkojiman/onetwopunch) which merges the advantages of unicornscan's speed and nmap's scripts. However, this can be something you research in your own time .
+
+
+
+
+
+
+
+##=== Web application enumeration
+
+##Using CURL
+
+#grep links and html comments
+curl 10.11.1.7 -s -L | grep "title\|href" | sed -e 's/^[[:space:]]*//'
+
+#render the site in the cli
+curl 10.11.1.7 -s -L | html2text -width '99' | uniq
+
+#Finding information about the underlying technology
+#If it is an open cms review code eg. find readme files to determine the version
+
+#Review the robots.txt file
+curl 10.11.1.7/robots.txt -s | html2text
+
+# include the headers in output
+curl -v http://10.11.1.1/iisadmin
+
+# manipulate header
+curl -H 'User-Agent: aUserAgent' http://10.11.1.1/iisadmin -v
+
+#Changing type to POST and include parameters
+curl -H 'User-Agent: aUserAgent' http://10.11.1.1/iisadmin -X POST -v -d "param1=value1&param2=value2"
+
+# Upload a file using curl
+curl "http://10.11.1.1/shell.asp" -X PUT -T shell.asp
+
+
+# Overview WebDAV curl commands https://www.qed42.com/blog/using-curl-commands-webdav
+
+
+## Tools and wordlists for web directory brute forcing
+# Wordlists:
+DirB - /usr/share/dirb/wordlists/
+wfuzz - /usr/share/wfuzz/wordlist/
+SecList - /usr/share/seclists/
+Tools:  DirB (CLI), DirBuster (GUI), wfuzz (CLI), Burp Suite (GUI), Gobuster (CLI):
+
+gobuster -u http://10.11.1.1/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -s '200,204,301,302,307,403,500' -e -l
+gobuster -u http://10.11.1.1/ -w /usr/share/seclists/Discovery/Web-Content/big.txt -s '200,204,301,302,307,403,500' -e -l
+
+self signed HTTPs certificates: skip ssl validation: -k
+
+# Targeting cgi-directories
+gobuster -u http://10.11.1.7/ -w /usr/share/seclists/Discovery/Web-Content/CGIs.txt -s '200,204,301,302,307,403,500' -e -l
+
+#Using nikto web scanner
+nikto -host 10.11.1.7
+nikto -host 10.11.1.7:443
+
+
+
+##=== FTP enumeration
+
+# finding ftp servers with anonymous access
+nmap -v -p 21 --script=ftp-anon.nse 10.11.1.1-254
+
+
+
+
+##=== SMB NetBios enumeration
+
+nbtscan -r 10.11.1.0/24           //Network
+nbtscan -r 10.11.1.2             //Target
+
+enum4linux 10.11.1.2             //More Target information
+
+# SMB Banner grabbing
+smbclient -L 10.11.1.2 -N
+
+# SMB Vuln nmap-scan
+nmap -p139,445 --script smb-vuln* -vv 10.11.1.7
+
+for vul in $(find /usr/share/nmap/scripts/ -name smb*vuln*.nse | cut -d"/" -f 6); do nmap -v -p 139,445 --script=$vul 10.11.1.2; done
+
+SMB share and user enumeration
+nmap -p 445 -vv --script=smb-enum-shares.nse,smb-enum-users.nse 10.11.1.7
+
+
+
+
+
+##=== SNMP Enumerating
+
+# Community String bruteforce
+onesixtyone -c /usr/share/doc/onesixtyone/dict.txt 10.11.1.1
+
+snmpenum 10.11.1.2 public /usr/share/snmpenum/linux.txt
+
+
+
+
+
+##=== ARP requests & pings to a particular host
+
+tcpdump -nnti tap0 arp and host 10.11.1.2
+
+
+
+
+
+
+##=== Searching for vulnerabilies:
+
+use searchsploit e.g.
+
+searchsploit OpenSSH 6
+searchsploit apache cgi | grep -v "/dos/"
+
+##use --coulour for a more efficient grep
+searchsploit --colour -t php 5.x | grep -v '/dos/' | grep -vi '\.php'
+searchsploit --colour -t php 5 | grep -vi '/dos/\|\.php[^$]' | grep -i '5\.\(5\|x\)' | grep -vi '/windows/\|PHP-Nuke\|RapidKill Pro\|Gift Registry\|Artiphp CMS'
+
+##=== Vulnerablity scanning
+
+#searching for shellshock according to elaborated cgi - paths
+nmap 10.11.1.7 -p 80 --script=http-shellshock --script-args uri=/cgi-bin/test.cgi --script-args uri=/cgi-bin/admin.cgi
+
+
+
+
+### Port knocking
+
+for x in 70 80 90; do nmap -Pn --host_timeout 201 --max-retries 0 -p $x 10.10.10.10; done
+
+
+
+
+
+### GETTING a shell
+#Reverse shell cheat sheet
+http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
+
+
+
+
+
+### USING PROXY chains
+
+
+proxychains nikto -host 10.1.1.254:30080 2> /dev/null
+
+proxychains gobuster -u http://10.1.1.2:30080/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -s '200,204,301,302,307,403,500' -e -l 2> /dev/null
+
+
+
+
+
+
+############### NOTES & SUGGESTIONS
+
+upnpexploiter in /going/2/upnp
+--> scans for upnp in the network
+python upnp.py target 10.11.1.*
