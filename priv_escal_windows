@@ -267,6 +267,8 @@ PS C:\> import module .\powerview.ps						or Import-Module
 PS C:\> Find-LocalAdminAccess
 DOMAIN.machine
 
+=== Using credentials to login from Linux via psexec
+/usr/share/doc/python-impacket/examples/psexec.py administrator@10.10.10.97
 
 
 

@@ -39,6 +39,8 @@ nmap -p139,445 -T4 -oN smb_vulns.txt -Pn --script smb-vuln* -vv -d 10.11.1.1-254
 nmap -Pn --top-ports=50 -sS 10.11.1.0/24
 Using Pn to treat the hosts to be up (otherwise you miss hosts which do not respond to a ping sweep)
 
+#Fast scanning for open ports
+nmap -v --max-retries=0 -T5 -p- 10.10.10.97
 
 # Deep scanning a target
 nmap -p- -sV --reason --dns-server 10.11.1.1 10.11.1.7
@@ -47,16 +49,12 @@ nmap -p- -sV --reason --dns-server 10.11.1.1 10.11.1.7
 nmap -sV -sC -Pn -vv -p- -A 10.11.1.7
 Using Pn to treat the host to be up (otherwise you miss hosts which do not respond to a ping sweep)
 
-
-
-
 #Dont forget UDP!! not using sV -> i would say it takes too much time
 nmap 10.11.1.7 -p- -sU --reason --dns-server 10.11.1.2
 nmap 10.11.1.1 -top-ports=50 -sV -sU
 
-
-
-
+#Specify a source port eg. 443
+nmap -g 443 -p- 10.10.10.112
 
 
 
@@ -68,6 +66,7 @@ Only Scanning machines which respond to a given Port: e.g. HTTPS-Webservers:
 # -sN         -- null scan, which sets no flags on the packet header sent to the target port.
 # -sF         -- FIN scan
 ### CAUTION: FIN, Xmas, and NULL scans are known to not work against Microsoft Windows hosts.
+
 
 # Find appropriate nmap scripts
 e.g. ssh
@@ -129,6 +128,7 @@ curl "http://10.11.1.1/shell.asp" -X PUT -T shell.asp
 ## Tools and wordlists for web directory brute forcing
 # Wordlists:
 DirB - /usr/share/dirb/wordlists/
+DirBuster - /usr/share/wordlists/dirbuster/
 wfuzz - /usr/share/wfuzz/wordlist/
 SecList - /usr/share/seclists/
 Tools:  DirB (CLI), DirBuster (GUI), wfuzz (CLI), Burp Suite (GUI), Gobuster (CLI):
@@ -138,6 +138,20 @@ gobuster -u http://10.11.1.1/ -w /usr/share/seclists/Discovery/Web-Content/big.t
 
 self signed HTTPs certificates: skip ssl validation: -k
 
+Commands for new Version of GoBuster:
+gobuster dir -u http://10.11.1.1/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -s '200,204,301,302,307,403,500' -e -l
+gobuster dir -u http://10.11.1.1/ -w /usr/share/seclists/Discovery/Web-Content/big.txt -s '200,204,301,302,307,403,500' -e -l
+Using a custom User-Agent header
+gobuster dir -u http://10.10.10.25:8000/ -w /usr/share/seclists/Discovery/Web-Content/big.txt -a "Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0"
+
+Using different wordlists:
+gobuster dir -u http://10.10.10.112 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+
+
+## Subdomain brute forcing
+wfuzz -H "Host: FUZZ.bighead.htb" -w /usr/share/seclists/Discovery/DNS/fierce-hostlist.txt -u bighead.htb --hh 11175
+
+
 # Targeting cgi-directories
 gobuster -u http://10.11.1.7/ -w /usr/share/seclists/Discovery/Web-Content/CGIs.txt -s '200,204,301,302,307,403,500' -e -l
 
@@ -145,7 +159,9 @@ gobuster -u http://10.11.1.7/ -w /usr/share/seclists/Discovery/Web-Content/CGIs.
 nikto -host 10.11.1.7
 nikto -host 10.11.1.7:443
 
-
+## Fuzzing Usernames of a login form
+eg.: The form shows the string No account found with that username. when a username is not valid (FUZZ indicates the value being fuzzed):
+wfuzz -c -w /usr/share/seclists/Usernames/Names/names.txt -d "username=FUZZ&password=passwd" --hs "No account found with that username." http://10.10.10.97/login.php
 
 ##=== FTP enumeration
 
@@ -172,6 +188,12 @@ for vul in $(find /usr/share/nmap/scripts/ -name smb*vuln*.nse | cut -d"/" -f 6)
 
 SMB share and user enumeration
 nmap -p 445 -vv --script=smb-enum-shares.nse,smb-enum-users.nse 10.11.1.7
+
+# Shares and permissions
+smbmap -u tyler -p '92g!mA8BGjOirkL%OG*&' -H 10.10.10.97
+
+# Accessing an SMB share
+smbclient -U 'tyler%92g!mA8BGjOirkL%OG*&' \\\\10.10.10.97\\new-site
 
 
 

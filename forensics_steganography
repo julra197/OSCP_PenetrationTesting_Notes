@@ -1,0 +1,110 @@
+
+
+-----------========= Linux ========----------
+
+Display strings of a file eg. a binary file or an image
+
+strings <filename>
+strings stegano.jpg
+strings /dev/sdb
+strings winfile.exe | grep -i pass
+
+strings -e b <filename>
+strings -e s <filename>
+strings -e l <filename>
+
+binwalk <filename>
+
+
+Extracting hidden files from the actual file
+
+steghide extract -sf <filename>
+steghide extract -sf stegano.jpg
+
+
+Hexeditor:
+
+xxd <filename>
+xxd /dev/sdb
+
+
+Grep something from a binary file (e.g. a flag or sth in a deleted file on a device)
+-> grep a flag from a deleted file on device /sdb
+
+grep -a '[a-z0-9]\{32\}' /dev/sdb
+
+
+Adding lines before and after the grep line using -B<n> and -A<n> (e.g. to recover the entire deleted files from a device)
+
+grep -B2 -A2 -a '[a-z0-9]\{32\}' /dev/sdb
+
+
+
+
+
+======= Arcives and compressed files
+
+Cracking the password of a zip file:
+Getting the password hash
+
+zip2john BHWS_Backup.zip
+
+
+Storing the hash in a file and use john to crack it
+
+john --wordlist=/usr/share/wordlists/rockyou.txt bhws.encr
+
+
+Extract the files providing the cracked password
+
+7z x BHWS_Backup.zip
+
+======= File META Data
+
+Inspect Meta Date of a file
+
+exiftool Presentation.pdf
+
+======= disk images
+
+show disks
+
+df -lh
+
+
+creating disk images:
+
+dd
+
+
+enhanced forensic version of dd:
+
+dcfldd
+dcfldd if=/dev/sdb1 of=/media/disk/test_image.dd
+
+
+Creating and transferring a ziped disc image via ssh to the local computer:
+
+ssh pi@10.10.10.48 "sudo dcfldd if=/dev/sdb | gzip -1 -" | dcfldd of=dev_sdb_output.dd.gz
+
+
+Extracting the file
+
+gunzip -d dev_sdb_output.dd.gz
+
+
+Image inspection
+
+binwalk dev_sdb_output.dd
+
+
+Using -Me to extract the files from the image
+
+binwalk -Me dev_sdb_output.dd
+
+
+Inspect the image and extract single or group of files or recover deleted files
+
+testdisk dev_sdb_output.dd
+
+photorec dev_sdb_output.dd

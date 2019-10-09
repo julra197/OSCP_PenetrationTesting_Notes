@@ -13,6 +13,7 @@ Creates a web server listening on a particular port using the current working di
 
 !!=== Getting a PTY shell from an ordinary shell
 python -c 'import pty; pty.spawn("/bin/sh")'
+python3 -c 'import pty; pty.spawn("/bin/sh")'
 
 
 Monitoring incoming ICMP packets (ping)
@@ -26,6 +27,11 @@ tcpdump host 10.11.1.2 -w 2.pcap -s 0
 
 Arp requests of particular host
 tcpdump -nnti tap0 arp and host 10.11.1.2
+
+
+Send IP address when "." dots aren't allowed:
+e.g ping 0x0a0a0e05
+google for IP to hex converter
 
 
 
@@ -86,6 +92,28 @@ rDesktop screen size:
 rdesktop -u administrator -p password -g 80% 10.11.1.1
 
 
+===========SSH certificates
+
+Providing a certificate to login via SSH:
+chmod 600 id_rsa
+ssh -i id_rsa root@10.10.10.17
+
+=== Cracking the Certificates password:
+
+Put the Certificate in a crackable format:
+/usr/share/john/ssh2john.py id_rsa > id_rsa.encrypted
+
+Crack the password:
+john id_rsa.encrypted --wordlist=/usr/share/wordlists/rockyou.txt
+
+
+=== OR using Jumbo john
+/opt/sshng2john/sshng2john.py id_rsa
+Copy the output without first number into a new file
+
+Using jumbo john to crack the password
+Get jumbo john at https://github.com/magnumripper/JohnTheRipper
+
 
 ===========PIVOTING
 
@@ -97,3 +125,10 @@ sshuttle routes any traffic to 10.1.1.0/24 over 10.11.1.1
 ==== proxychains =====
 
 proxychains gobuster -u http://10.1.1.2/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -s '200,204,301,302,307,403,500' -e -l 2>/dev/nul
+
+
+
+============= Proxying a request (to Burp) in a Python script
+
+proxy = {"http":"127.0.0.1:8080"}
+r = requests.head(url+"/"+payload, proxies=proxy)
