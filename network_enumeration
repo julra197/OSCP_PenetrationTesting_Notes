@@ -190,6 +190,8 @@ SMB share and user enumeration
 nmap -p 445 -vv --script=smb-enum-shares.nse,smb-enum-users.nse 10.11.1.7
 
 # Shares and permissions
+smbmap -H <IP>
+smbmap -H 10.10.10.130 -u anonymous
 smbmap -u tyler -p '92g!mA8BGjOirkL%OG*&' -H 10.10.10.97
 
 # Accessing an SMB share
