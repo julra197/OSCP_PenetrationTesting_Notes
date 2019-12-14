@@ -125,3 +125,16 @@ Use the haeaderfile to crack the password using hashcat:
 hashcat -m 14600 luks-header /opt/wordlist/rockyou.txt
 
 
+Decrypt the file
+
+sudo cryptsetup luksOpen backup.img decrypted
+
+
+Mount the file
+
+ls /dev/mapper
+
+sudo mount /dev/mapper/decrypted /mnt
+
+
+
