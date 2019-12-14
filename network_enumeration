@@ -192,14 +192,19 @@ nmap -p 445 -vv --script=smb-enum-shares.nse,smb-enum-users.nse 10.11.1.7
 # Shares and permissions
 smbmap -H <IP>
 smbmap -H 10.10.10.130 -u anonymous
+smbmap -H 10.10.10.130 -u anonymous -r --depth 5
 smbmap -u tyler -p '92g!mA8BGjOirkL%OG*&' -H 10.10.10.97
+
 
 # Accessing an SMB share
 smbclient -U 'tyler%92g!mA8BGjOirkL%OG*&' \\\\10.10.10.97\\new-site
+smbclient -U anonymous //10.10.10.130/share
 
-
-
-
+If 'protocol negotiation failed: NT_STATUS_CONNECTION_RESET' error:
+-> add 
+client min protocol = SMB2
+client max protocol = SMB3
+to /etc/samba/smb.conf
 
 ##=== SNMP Enumerating
 

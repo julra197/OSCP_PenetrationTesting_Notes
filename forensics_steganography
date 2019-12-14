@@ -108,3 +108,20 @@ Inspect the image and extract single or group of files or recover deleted files
 testdisk dev_sdb_output.dd
 
 photorec dev_sdb_output.dd
+
+======= Decrypt luks encrypted file
+Get the Payload offset:
+
+sudo cryptsetup luksDump backup.img
+
+
+Get the header hash, where count is the offset value:
+
+dd if=backup.img of=luks-header bs=512 count=4097
+
+
+Use the haeaderfile to crack the password using hashcat:
+
+hashcat -m 14600 luks-header /opt/wordlist/rockyou.txt
+
+
