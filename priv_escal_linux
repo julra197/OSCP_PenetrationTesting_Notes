@@ -16,9 +16,20 @@ from /opt/LinEnum
 find / -perm -o+w -type d 2>/dev/null
 
 ##=== Finding file containing string
+only match password as whole word
+--> eg. applicatoinpassword will not be fount
+
 grep -rnw '/' -e 'password'
 
+Remove errors in output
+grep -rnw '/' -e 'password' 2>/dev/null
 
+strings conaining password in files:
+--> eg. applicatoinpassword will be fount
+grep -rna '.' -e 'password'
+
+add case insensitive
+grep -rnai '.' -e 'password'
 
 
 
