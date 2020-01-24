@@ -1,16 +1,7 @@
 
 LINUX finding Files
 
-only match password as whole word
---> eg. applicatoinpassword will not be fount
 grep -rnw '/' -e 'password'
-
-Remove errors in output
-grep -rnw '/' -e 'password' 2>/dev/null
-
-strings conaining password in files:
---> eg. applicatoinpassword will be fount
-grep -rna '.' -e 'password'
 
 python2 -m SimpleHTTPServer <Port>
 Creates a web server listening on a particular port using the current working directory
